@@ -40,6 +40,15 @@ const findAccount = (db, criteria, callback) => {
     });
 }
 
+const insertDocument = (db, doc, callback) => {
+    db.collection('accounts').
+    insertOne(doc, (err, result) => {
+        assert.equal(err,null);
+        console.log("inserted one document " + JSON.stringify(doc));
+        callback();
+    });
+}
+
 const verifyAccount = (req, res, criteria) => { 
 	const client = new MongoClient(mongourl);
     client.connect((err) => {
@@ -52,7 +61,7 @@ const verifyAccount = (req, res, criteria) => {
 			var n = 0;
 
 			for (var doc of docs) {
-                console.log(doc);
+                
 			if(doc.accountId == req.body.id && doc.password == req.body.password){
 				console.log("Correct");
 			 req.session.authenticated = true;        // 'authenticated': true
@@ -65,6 +74,45 @@ const verifyAccount = (req, res, criteria) => {
 		
 	})
 }
+
+const signUpAccount = (req, res, criteria) => { 
+	const client = new MongoClient(mongourl);
+    client.connect((err) => {
+        assert.equal(null, err);
+        console.log("Sign Up...");
+		const db = client.db(dbName);
+
+		findAccount(db, criteria, (docs) => {
+		
+			var result = false;
+
+			for (var doc of docs) {
+
+			if(doc.accountId == req.body.id && doc.password == req.body.password){
+				result = true;
+			}
+
+			}
+			if (result){
+				console.log("already exit...");
+				res.redirect('/signUp');
+
+			}else{
+				console.log("inserting...");
+			
+				insertDocument(db,req.body,()=>{
+					client.close();
+					console.log("Create successful...");
+					res.redirect('/');
+				})
+				
+			}
+		
+		})
+
+	})
+}
+
 
 
 // support parsing of application/json type post data
@@ -101,7 +149,7 @@ app.get('/signUp', (req,res) => {
 });
 
 app.post('/signUp', (req,res) => {
-	verifyAccount(req,res,req.query);
+	signUpAccount(req,res,req.query);
 	
 });
 
@@ -111,3 +159,4 @@ app.get('/logout', (req,res) => {
 });
 
 app.listen(process.env.PORT || 8099);
+
