@@ -29,6 +29,17 @@ app.use(session({
 
 app.set('view engine','ejs');
 
+const findRestaurant = (db, criteria, callback) => {
+    let cursor = db.collection('accounts').find(criteria);
+    console.log(`findAccount: ${JSON.stringify(criteria)}`);
+    cursor.toArray((err,docs) => {
+        assert.equal(err,null);
+        console.log(`findAccount: ${docs.length}`);
+        callback(docs);
+    });
+}
+
+
 
 const findAccount = (db, criteria, callback) => {
     let cursor = db.collection('accounts').find(criteria);
@@ -113,6 +124,22 @@ const signUpAccount = (req, res, criteria) => {
 	})
 }
 
+const listDocument = (req, res, criteria) => { 
+	const client = new MongoClient(mongourl);
+    client.connect((err) => {
+        assert.equal(null, err);
+        console.log("list...data...");
+		const db = client.db(dbName);
+
+		findAccount(db, criteria, (docs) => {
+		//testing...need to modify(table name - account)
+			res.status(200).render("index",docs)
+		
+		})
+
+	})
+}
+
 
 
 // support parsing of application/json type post data
@@ -151,6 +178,13 @@ app.get('/signUp', (req,res) => {
 app.post('/signUp', (req,res) => {
 	signUpAccount(req,res,req.query);
 	
+});
+app.get('/index',(req,res) =>{
+	listDocument(req,res,req.query);
+});
+
+app.post('/index',(req,res) =>{
+
 });
 
 app.get('/logout', (req,res) => {
