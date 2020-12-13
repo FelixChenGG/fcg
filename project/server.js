@@ -3,8 +3,8 @@ const app = express();
 const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 const assert = require('assert');
-const fs = require('fs');
 const formidable = require('express-formidable');
+const fs = require('fs');
 const mongourl = 'mongodb+srv://Chen:qiya981226@cluster0.k4bwk.mongodb.net/test?retryWrites=true&w=majority';
 const dbName = 'test';
 
@@ -14,30 +14,19 @@ const bodyParser = require('body-parser');
 const client = new MongoClient(mongourl);
 
 
-app.set('view engine','ejs');
 
+app.set('view engine','ejs');
 const SECRETKEY = 'I want to pass COMPS381F';
 
-
 app.set('view engine','ejs');
-
 
 app.use(session({
   name: 'loginSession',
   keys: [SECRETKEY]
 }));
 
-app.set('view engine','ejs');
 
-const findRestaurant = (db, criteria, callback) => {
-    let cursor = db.collection('accounts').find(criteria);
-    console.log(`findAccount: ${JSON.stringify(criteria)}`);
-    cursor.toArray((err,docs) => {
-        assert.equal(err,null);
-        console.log(`findAccount: ${docs.length}`);
-        callback(docs);
-    });
-}
+app.set('view engine','ejs');
 
 
 
@@ -76,7 +65,7 @@ const verifyAccount = (req, res, criteria) => {
 			if(doc.accountId == req.body.id && doc.password == req.body.password){
 				console.log("Correct");
 			 req.session.authenticated = true;        // 'authenticated': true
-			req.session.username = req.body.name;	 // 'username': req.body.name	
+			req.session.username = req.body.id;	 	
 				res.redirect('/');
 			}
 			}
@@ -101,11 +90,12 @@ const signUpAccount = (req, res, criteria) => {
 
 			if(doc.accountId == req.body.id && doc.password == req.body.password){
 				result = true;
+				
 			}
 
 			}
 			if (result){
-				console.log("already exit...");
+				console.log("already exist...");
 				res.redirect('/signUp');
 
 			}else{
@@ -124,21 +114,91 @@ const signUpAccount = (req, res, criteria) => {
 	})
 }
 
-const listDocument = (req, res, criteria) => { 
+const findRestaurant = (db, criteria, callback) => {
+    let cursor = db.collection('restaurants').find(criteria);
+    console.log(`findRestaurant: ${JSON.stringify(criteria)}`);
+    cursor.toArray((err,docs) => {
+        assert.equal(err,null);
+        console.log(`findRestaurant: ${docs.length}`);
+        callback(docs);
+    });
+}
+
+
+const listDocument = (req, res,criteria) => { 
 	const client = new MongoClient(mongourl);
     client.connect((err) => {
         assert.equal(null, err);
         console.log("list...data...");
 		const db = client.db(dbName);
+		const count = 0;
+	
 
-		findAccount(db, criteria, (docs) => {
+		findRestaurant(db, criteria, (docs) => {
+			
 		//testing...need to modify(table name - account)
-			res.status(200).render("index",docs)
-		
+				
+			res.status(200).render("index",{Restaurant:docs,userName:req.session.username})
+			
 		})
 
 	})
 }
+
+const insertRestaurant = ( doc, callback) => {
+	const client = new MongoClient(mongourl);
+	client.connect((err) => {
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+        const db = client.db(dbName);
+
+	db.collection('restaurants').
+	insertOne(doc, (err, result) => {
+	  assert.equal(err, null);
+	  console.log("insert one" + JSON.stringify(doc));
+	  callback();
+	});
+  }) 
+}
+
+const createRestaurant =(req, res) => {
+
+	
+        console.log("creating...");
+		
+		var docu = {};
+		docu.id = req.fields.id;
+		docu.name = req.fields.name;
+		docu.Borough = req.fields.borough;
+		docu.Cuisine = req.fields.cuisine;
+		
+		if (req.files.image.size > 0) {
+            fs.readFile(req.files.image.path, (err,data) => {
+				assert.equal(err,null);
+				docu.photo = {};
+					docu.photo.image = new Buffer.from(data).toString('base64');
+					docu.photo.minetype = req.files.image.type;
+                
+            });
+        } 
+					
+		docu.address = {};
+		docu.address.street = req.fields.street;
+		docu.address.building = req.fields.building;
+		docu.address.zipcode = req.fields.zipcode;
+		docu.address.coord = req.fields.coord;
+		docu.owner = req.fields.owner;
+		console.log(docu);
+			insertRestaurant(docu,()=>{
+				console.log("insert successful...");
+				res.redirect('/index');
+			})
+	
+}
+  
+
+
+
 
 
 
@@ -148,6 +208,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 //output
 app.get('/', (req,res) => {
+	
 	if (!req.session.authenticated) {    // user not logged in!
 		res.redirect('/login');
 	} else {
@@ -183,9 +244,17 @@ app.get('/index',(req,res) =>{
 	listDocument(req,res,req.query);
 });
 
-app.post('/index',(req,res) =>{
+app.get('/create',(req,res) =>{
+	res.status(200).render('create',{userName:req.session.username});
+})
 
-});
+app.use(formidable());
+app.set('view engine', 'ejs');
+
+app.post('/create',(req,res) =>{
+	createRestaurant(req,res);
+})
+
 
 app.get('/logout', (req,res) => {
 	req.session = null;   // clear cookie-session
@@ -193,4 +262,3 @@ app.get('/logout', (req,res) => {
 });
 
 app.listen(process.env.PORT || 8099);
-
