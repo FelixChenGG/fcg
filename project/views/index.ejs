@@ -1,19 +1,28 @@
 <html>
     <body>
-    <H2>(<%= userName %>)</H2>
-        <% if (c.length > 0) { %>
+    <H2>Welcome,(<%= userName %>)</H2>
+    
+        <% if ( Restaurant.length > 0) { %>
             <ul>
-            <% for (var  of ) { %>
-            <li>Booking ID: <a href="/details?_id=<%= b._id %>"><%= b.bookingid %></a></li>
+            <% for (var r of Restaurant) { %>
+
+            <li>Restaurant ID: <%= r.id %>   <a href="/edit?_id=<%= r._id %>" >edit</a>
+
+                <% if ( r.owner == userName) { %>
+                    <a href="/details?_id=<%= r._id %>" >detail</a>
+                <% } %>
+            
+            </li>
+
             <% } %>
         </ul>
-
-              <% } %>
             
             <% } else { %>
-            <h1>Nothing to Show!</h1>
+            <h1>Nothing to Show!</h1><br>
+            <h1>Create your own document</h1><br>
+
             <% } %>
-        
-        
+        <a href="/create?username=<%=userName%>"> <button>Create</button></a>
+        <a href="/logout"> <button>Logout</button></a>
     </body>
 </html>
