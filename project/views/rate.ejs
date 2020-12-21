@@ -1,0 +1,36 @@
+<html>
+    <title>Rate the restaurant</title>
+    <body>
+        <H1>Rate the restaurant</H1>
+        <% if ( !result ) { %>
+        <p>Restaurant ID: <%=id%></p>
+        <form action = "/rate?id=<%=id%>" method = "POST" enctype="multipart/form-data" >
+            Grades
+            <input type = "hidden" name = "user" value="<%=userName%>" ><br>
+            Score: <select name="score">
+                <option value="null"></option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+              </select>
+
+            <br><br>
+            <input type = "submit" value = "SUBMIT"></input>
+
+    </form>
+
+
+    
+    <% } else { %> 
+        <p>Already raded</p>
+        <a href="/index"> <button>back</button></a>
+        <% } %>
+    </body>
+</html>
