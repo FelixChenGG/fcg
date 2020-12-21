@@ -59,16 +59,18 @@ const verifyAccount = (req, res, criteria) => {
 		findAccount(db, criteria, (docs) => {
 			client.close();
 			var n = 0;
-
+			console.log(req.body.password);
 			for (var doc of docs) {
                 
-			if(doc.accountId == req.body.id && doc.password == req.body.password){
+			if(doc.id == req.body.id && doc.password == req.body.password){
 				console.log("Correct");
 			 req.session.authenticated = true;        // 'authenticated': true
 			req.session.username = req.body.id;	 	
-				res.redirect('/');
+				
 			}
+			
 			}
+			res.redirect('/');
 		})
 
 		
@@ -195,10 +197,74 @@ const createRestaurant =(req, res) => {
 			})
 	
 }
+
+const checkInfor =(req, res,criteria) =>{
+	const client = new MongoClient(mongourl);
+	client.connect((err) => {
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+		const db = client.db(dbName);
+
+		findRestaurant (db, criteria, (docs)=>{
+			let results= false;
+			for (var doc of docs[0].grades) {
+				
+				console.log(doc.user);
+					if(doc.user == req.session.username){
+						results = true;
+					}
+					console.log(results);
+					res.status(200).render('rate',{id:req.query.r_id,userName:req.session.username,result:results});
+			
+			}
+		})
+		
+	})
+
+
+}
   
 
+const addScore = (criteria, addDoc, callback) => {
+	const client = new MongoClient(mongourl);
+	client.connect((err) => {
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+		const db = client.db(dbName);
+
+		db.collection('restaurants').updateOne(criteria,
+			{
+				$push: addDoc
+				
+			},
+            (err, results) => {
+                client.close();
+                assert.equal(err, null);
+                callback(results);
+            }
+        );
+
+	})
+
+}
+
+const addGrade = (req, res,criteria) =>{
+
+ console.log("rate score...");
+		
+		var docu = {};
+		docu.grades = {};
+		docu.grades.user = req.fields.user;
+		docu.grades.score = req.fields.score;
+
+		addScore(criteria,docu,(results)=>{
+			console.log("insert successful...");
+			console.log(results.result.nModified);
+			res.redirect('/index');
+		})
 
 
+}
 
 
 
@@ -255,6 +321,13 @@ app.post('/create',(req,res) =>{
 	createRestaurant(req,res);
 })
 
+app.get('/rate',(req,res) =>{
+	checkInfor(req,res,req.query.r_id);
+});
+
+app.post('/rate',(req,res) =>{
+addGrade(req,res,req.query);
+});
 
 app.get('/logout', (req,res) => {
 	req.session = null;   // clear cookie-session
