@@ -3,8 +3,8 @@
     <body>
         <H1>Rate the restaurant</H1>
         <% if ( !result ) { %>
-        <p>Restaurant ID: <%=id%></p>
-        <form action = "/rate?id=<%=id%>" method = "POST" enctype="multipart/form-data" >
+        <p>Restaurant ID: <%=doc.id%></p>
+        <form action = "/rate?_id=<%=doc._id%>" method = "POST" enctype="multipart/form-data" >
             Grades
             <input type = "hidden" name = "user" value="<%=userName%>" ><br>
             Score: <select name="score">
