@@ -1,0 +1,40 @@
+<html>
+    <body>
+        
+    <H2><%= datadoc.id %></H2>
+   
+    <br>
+    <h3> Borough: <%= datadoc.borough %> </h3>
+    <br> <br>
+    <h3> Curisine: <%= datadoc.curusine %></h3>
+    <br> <br>
+    <h3> Street: <%= datadoc.address.street %></h3>
+    <br> <br>
+    <h3> Building: <%= datadoc.address.building %></h3>
+    <br> <br>
+    <h3> Zipcode: <%= datadoc.address.zipcode %></h3>
+    <br> <br>
+    <h3> GPS: <%= datadoc.address.coord %></h3>
+    <br> <br>
+    <h3> Owner: <%= datadoc.owner %></h3>
+    <br> <br>
+    <img src="data:image/jpg;base64, <%= datadoc.photo.image %>"><br>
+     <% if ( datadoc.grades.length > 0) { %>
+            <ul>
+            <% for (var r of datadoc.grades) { %>
+
+            <li>Rating: <%= r.user %>  | <%= r.score %>
+
+        </li>
+
+            <% } %>
+        </ul>
+
+            <% } else { %>
+            <h1>No Rating yet</h1><br>
+            <% } %>
+    <br> <br>
+    <br> <br>
+        <a href="/index"> <button>GO Back</button></a>
+    </body>
+</html>
