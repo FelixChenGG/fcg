@@ -190,6 +190,7 @@ const createRestaurant =(req, res) => {
 		docu.address.zipcode = req.fields.zipcode;
 		docu.address.coord = req.fields.coord;
 		docu.owner = req.fields.owner;
+		docu.grades =[];
 		console.log(docu);
 			insertRestaurant(docu,()=>{
 				console.log("insert successful...");
@@ -205,18 +206,25 @@ const checkInfor =(req, res,criteria) =>{
         console.log("Connected successfully to server");
 		const db = client.db(dbName);
 
-		findRestaurant (db, criteria, (docs)=>{
+		let DOCID = {};
+        DOCID['_id'] = ObjectID(criteria._id);
+
+		findRestaurant (db, DOCID, (docs)=>{
 			let results= false;
-			for (var doc of docs[0].grades) {
+			if( docs[0].grades.length > 0){
+				
+				for (var doc of docs[0].grades) {
 				
 				console.log(doc.user);
 					if(doc.user == req.session.username){
 						results = true;
 					}
-					console.log(results);
-					res.status(200).render('rate',{id:req.query.r_id,userName:req.session.username,result:results});
+					console.log(results);}
+			
+					
 			
 			}
+			res.status(200).render('rate',{doc:req.query,userName:req.session.username,result:results});
 		})
 		
 	})
@@ -256,8 +264,11 @@ const addGrade = (req, res,criteria) =>{
 		docu.grades = {};
 		docu.grades.user = req.fields.user;
 		docu.grades.score = req.fields.score;
-
-		addScore(criteria,docu,(results)=>{
+		console.log(docu);
+		let DOCID = {};
+		DOCID['_id'] = ObjectID(criteria._id);
+		
+		addScore(DOCID,docu,(results)=>{
 			console.log("insert successful...");
 			console.log(results.result.nModified);
 			res.redirect('/index');
@@ -295,19 +306,19 @@ deleteRestaurant(DOCID,()=>{
 
 }
 
-const handle_Edit = (res, criteria) => {
+const handle_Edit = (req, res, criteria) => {
     const client = new MongoClient(mongourl);
     client.connect((err) => {
         assert.equal(null, err);
         console.log("Connected successfully to server");
-		const db = client.db(dbName);
-		let DOCID = {};
+        const db = client.db(dbName);
+        let DOCID = {};
         DOCID['_id'] = ObjectID(criteria._id);
 
         /* use Document ID for query */
        findRestaurant(db, DOCID, (docs)=>{ 
-            res.status(200).render('edit',{restaurants: docs})
-        
+            res.status(200).render('edit',{restaurants: docs, userName:req.session.username})
+
     });
 });
 }
@@ -333,42 +344,61 @@ const updateDocument = (criteria, updateDoc, callback) => {
 }
 
 const handle_Update =(req, res, criteria) => {
-	
 
-		console.log("updating...");
-		var updateDoc = {};
-		updateDoc.id = req.fields.id;
-		updateDoc.name = req.fields.name;
-		updateDoc.Borough = req.fields.borough;
-		updateDoc.Cuisine = req.fields.cuisine;
+	let DOCID = {};
+	DOCID['_id'] = ObjectID(criteria._id);
+
+	console.log("updating...");
+	console.log(req.fields.id);
+	var updateDoc = {};
+	updateDoc.id = req.fields.id;
+	updateDoc.name = req.fields.name;
+	updateDoc.Borough = req.fields.borough;
+	updateDoc.Cuisine = req.fields.cuisine;
+
+	if (req.files.image.size > 0) {
+		fs.readFile(req.files.image.path, (err,data) => {
+			assert.equal(err,null);
+			updateDoc.photo = {};
+				updateDoc.photo.image = new Buffer.from(data).toString('base64');
+				updateDoc.photo.minetype = req.files.image.type;
+
+		});
+	}
+
+	updateDoc.address = {};
+	updateDoc.address.street = req.fields.street;
+	updateDoc.address.building = req.fields.building;
+	updateDoc.address.zipcode = req.fields.zipcode;
+	updateDoc.address.coord = req.fields.coord;
+	updateDoc.owner = req.fields.owner;
+	console.log(updateDoc);
+	updateDocument(DOCID   ,updateDoc, (results)=>{
+			console.log("update successful...");
+			res.redirect('/index');
+		})
+
+}
+
+const dispDetail =(req, res,criteria) =>{
+    const client = new MongoClient(mongourl);
+    client.connect((err) => {
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+        const db = client.db(dbName);
+		var collection = db.collection('restaurants');
 		
-		if (req.files.image.size > 0) {
-            fs.readFile(req.files.image.path, (err,data) => {
-				assert.equal(err,null);
-				updateDoc.photo = {};
-					updateDoc.photo.image = new Buffer.from(data).toString('base64');
-					updateDoc.photo.minetype = req.files.image.type;
-                
-            });
-        } else {
-			updateDocument(criteria	,updateDoc, (results)=>{
-				console.log("update successful...");
-				res.redirect('/index');
-			});
-		}
-					
-		updateDoc.address = {};
-		updateDoc.address.street = req.fields.street;
-		updateDoc.address.building = req.fields.building;
-		updateDoc.address.zipcode = req.fields.zipcode;
-		updateDoc.address.coord = req.fields.coord;
-		updateDoc.owner = req.fields.owner;
-		console.log(updateDoc);
-		updateDocument(criteria	,updateDoc, (results)=>{
-				console.log("update successful...");
-				res.redirect('/index');
-			})
-	
+		let DOCID = {};
+		DOCID['_id'] = ObjectID(criteria._id);
+		
+            findRestaurant (db, DOCID, (docs)=>{
+				console.log(docs);
+				res.status(200).render('details',{datadoc:docs[0]})
+				
+
+        })
+    })
+
 }
 
 
@@ -436,6 +466,8 @@ app.post('/search',(req,res)=>{
 
 });
 
+
+
 app.get('/create',(req,res) =>{
 	res.status(200).render('create',{userName:req.session.username});
 })
@@ -444,9 +476,12 @@ app.get('/delete',(req,res) =>{
 	deleteDoc(req,res,req.query);
 });
 
+app.get('/details', (req,res) => {
+    dispDetail(req,res,req.query);
+});
 
 app.get('/edit',(req,res) =>{
-	handle_Edit(res,req.query);
+	handle_Edit(req,res,req.query);
 });
 
 app.use(formidable());
@@ -456,10 +491,12 @@ app.post('/create',(req,res) =>{
 	createRestaurant(req,res);
 })
 
-
+app.post('/update',(req,res) =>{
+    handle_Update(req, res, req.query);
+})
 
 app.get('/rate',(req,res) =>{
-	checkInfor(req,res,req.query._id);
+	checkInfor(req,res,req.query);
 });
 
 app.post('/rate',(req,res) =>{
@@ -545,4 +582,4 @@ app.get('/api/restaurants/cuisine/:cuisine', (req,res) => {
 
 
 
-app.listen(process.env.PORT || 8099);
+app.listen(process.env.PORT || 8098);
