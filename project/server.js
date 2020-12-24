@@ -171,8 +171,8 @@ const createRestaurant =(req, res) => {
 		var docu = {};
 		docu.id = req.fields.id;
 		docu.name = req.fields.name;
-		docu.Borough = req.fields.borough;
-		docu.Cuisine = req.fields.cuisine;
+		docu.borough = req.fields.borough;
+		docu.cuisine = req.fields.cuisine;
 		
 		if (req.files.image.size > 0) {
             fs.readFile(req.files.image.path, (err,data) => {
@@ -266,6 +266,111 @@ const addGrade = (req, res,criteria) =>{
 
 }
 
+const deleteRestaurant = ( doc, callback) => {
+	const client = new MongoClient(mongourl);
+	client.connect((err) => {
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+        const db = client.db(dbName);
+
+		
+	db.collection('restaurants').deleteOne(doc, (err, result) => {
+	  assert.equal(err, null);
+	  console.log("delete one" + JSON.stringify(doc));
+	  callback();
+	});
+  }) 
+}
+
+const deleteDoc=(req, res,criteria) =>{
+
+	let DOCID = {};
+	DOCID['_id'] = ObjectID(criteria._id);
+
+deleteRestaurant(DOCID,()=>{
+	console.log("delete successful...");
+	
+	res.redirect('/index');
+})
+
+}
+
+const handle_Edit = (res, criteria) => {
+    const client = new MongoClient(mongourl);
+    client.connect((err) => {
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+		const db = client.db(dbName);
+		let DOCID = {};
+        DOCID['_id'] = ObjectID(criteria._id);
+
+        /* use Document ID for query */
+       findRestaurant(db, DOCID, (docs)=>{ 
+            res.status(200).render('edit',{restaurants: docs})
+        
+    });
+});
+}
+
+const updateDocument = (criteria, updateDoc, callback) => {
+    const client = new MongoClient(mongourl);
+    client.connect((err) => {
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+        const db = client.db(dbName);
+
+         db.collection('restaurants').updateOne(criteria,
+            {
+                $set : updateDoc
+            },
+            (err, results) => {
+                client.close();
+                assert.equal(err, null);
+                callback(results);
+            }
+        );
+    });
+}
+
+const handle_Update =(req, res, criteria) => {
+	
+
+		console.log("updating...");
+		var updateDoc = {};
+		updateDoc.id = req.fields.id;
+		updateDoc.name = req.fields.name;
+		updateDoc.Borough = req.fields.borough;
+		updateDoc.Cuisine = req.fields.cuisine;
+		
+		if (req.files.image.size > 0) {
+            fs.readFile(req.files.image.path, (err,data) => {
+				assert.equal(err,null);
+				updateDoc.photo = {};
+					updateDoc.photo.image = new Buffer.from(data).toString('base64');
+					updateDoc.photo.minetype = req.files.image.type;
+                
+            });
+        } else {
+			updateDocument(criteria	,updateDoc, (results)=>{
+				console.log("update successful...");
+				res.redirect('/index');
+			});
+		}
+					
+		updateDoc.address = {};
+		updateDoc.address.street = req.fields.street;
+		updateDoc.address.building = req.fields.building;
+		updateDoc.address.zipcode = req.fields.zipcode;
+		updateDoc.address.coord = req.fields.coord;
+		updateDoc.owner = req.fields.owner;
+		console.log(updateDoc);
+		updateDocument(criteria	,updateDoc, (results)=>{
+				console.log("update successful...");
+				res.redirect('/index');
+			})
+	
+}
+
 
 
 // support parsing of application/json type post data
@@ -310,9 +415,39 @@ app.get('/index',(req,res) =>{
 	listDocument(req,res,req.query);
 });
 
+app.post('/search',(req,res)=>{
+	var doc = {};
+	let temp = '/index';
+	console.log(req.body.search);
+	switch (req.body.type) {
+		case 'name':
+		  temp = temp + '?name='+req.body.search;
+		  break;
+		case 'cuisine':
+			temp = temp + '?cuisine='+req.body.search;
+			break;
+		case 'borough':
+			temp = temp + '?borough='+req.body.search;
+		  break;
+		default:
+		  console.log(`Sorry, Error`);
+	  }
+	 res.redirect(temp);
+
+});
+
 app.get('/create',(req,res) =>{
 	res.status(200).render('create',{userName:req.session.username});
 })
+
+app.get('/delete',(req,res) =>{
+	deleteDoc(req,res,req.query);
+});
+
+
+app.get('/edit',(req,res) =>{
+	handle_Edit(res,req.query);
+});
 
 app.use(formidable());
 app.set('view engine', 'ejs');
@@ -321,8 +456,10 @@ app.post('/create',(req,res) =>{
 	createRestaurant(req,res);
 })
 
+
+
 app.get('/rate',(req,res) =>{
-	checkInfor(req,res,req.query.r_id);
+	checkInfor(req,res,req.query._id);
 });
 
 app.post('/rate',(req,res) =>{
@@ -354,8 +491,58 @@ app.get('/api/restaurants/names/:name', (req,res) => {
             });
         });
     } else {
-        res.status(500).json({"error": "missing bookingid"});
+        res.status(500).json({"error": "missing name"});
     }
 })
+
+app.get('/api/restaurants/borough/:borough', (req,res) => {
+    if (req.params.borough) {
+        let criteria = {};
+        criteria['borough'] = req.params.name;
+        const client = new MongoClient(mongourl);
+        client.connect((err) => {
+            assert.equal(null, err);
+            console.log("Connected successfully to server");
+            const db = client.db(dbName);
+
+            findRestaurant(db, criteria, (docs) => {
+                client.close();
+				console.log("Closed DB connection");
+				
+					res.status(200).json(docs);
+				
+                
+            });
+        });
+    } else {
+        res.status(500).json({"error": "missing borough"});
+    }
+})
+
+app.get('/api/restaurants/cuisine/:cuisine', (req,res) => {
+    if (req.params.cuisine) {
+        let criteria = {};
+        criteria['cuisine'] = req.params.name;
+        const client = new MongoClient(mongourl);
+        client.connect((err) => {
+            assert.equal(null, err);
+            console.log("Connected successfully to server");
+            const db = client.db(dbName);
+
+            findRestaurant(db, criteria, (docs) => {
+                client.close();
+				console.log("Closed DB connection");
+				
+					res.status(200).json(docs);
+				
+                
+            });
+        });
+    } else {
+        res.status(500).json({"error": "missing cuisine"});
+    }
+})
+
+
 
 app.listen(process.env.PORT || 8099);
