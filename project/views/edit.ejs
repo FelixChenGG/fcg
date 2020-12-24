@@ -4,10 +4,10 @@
         <p>This is edit restaurant documents page.</p>
         <p>Please enter the following items:</p>
         <% for (var r of restaurants) { %>
-        <form action = "/update" method = "POST" enctype="multipart/form-data" >
+        <form action = "/update?_id=<%= r._id %>" method = "POST" enctype="multipart/form-data" >
 
             1. Restaurant ID : <input type = "text" name = "id" value="<%= r.id %>"><br>
-            
+
             2. Name : <input type = "text" name = "name" value="<%= r.name %>" required><br>
 
             3. Borough : <input type = "text" name = "borough" value="<%= r.borough %>"><br>
@@ -26,7 +26,8 @@
             zipcode <input type = "text" name = "zipcode" value="<%= r.address.zipcode %>">
             coord <input type = "text" name = "coord" value="<%= r.address.coord  %>"><br>
             <% } %>
-            
+
+            <input type = "hidden" name = "owner" value="<%=r.owner %>" ><br>
             <br><br>
             <input type = "submit" value = "SUBMIT"></input>
 
