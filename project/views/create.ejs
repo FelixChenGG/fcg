@@ -5,21 +5,21 @@
         <p>Please enter the following items:</p>
         <form action = "/create" method = "POST" enctype="multipart/form-data" >
 
-            1. Restaurant ID : <input type = "text" name = "id" ><br>
+            1. Restaurant ID : <input type = "text" name = "id" required><br>
             
             2. Name : <input type = "text" name = "name" required><br>
 
-            3. Borough : <input type = "text" name = "borough" ><br>
+            3. Borough : <input type = "text" name = "borough" value=" "><br>
 
-            4. Cuisine : <input type = "text" name = "cuisine" ><br>
+            4. Cuisine : <input type = "text" name = "cuisine" value=" "><br>
 
-            5. Photo : <input type = "file" name = "image"><br>
+            5. Photo : <input type = "file" name = "image" value=" "><br>
 
             6. Address :
-            street <input type = "text" name = "street" >
-            building <input type = "text" name = "building" >
-            zipcode <input type = "text" name = "zipcode" >
-            coord <input type = "text" name = "coord" ><br>
+            street <input type = "text" name = "street" value=" ">
+            building <input type = "text" name = "building" value=" ">
+            zipcode <input type = "text" name = "zipcode" value=" ">
+            coord <input type = "text" name = "coord" value=" " ><br>
 
             <input type = "hidden" name = "owner" value="<%=userName%>" ><br>
             <br><br>
